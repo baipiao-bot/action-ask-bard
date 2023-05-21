@@ -20,7 +20,7 @@ jobs:
     - name: Execute on message
       env:
         SECRET: ${{ secrets.SECRET }}
-        COOKIE: ${{ secrets.COOKIE }}
+        Secure_1PSID: ${{ secrets.Secure_1PSID }}
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         REDIS_URL: ${{ secrets.REDIS_URL }}
       run: chmod +x ./action-ask-bard && ./action-ask-bard
