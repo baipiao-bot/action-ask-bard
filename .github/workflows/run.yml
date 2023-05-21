@@ -1,0 +1,27 @@
+name: Ask
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download latest release
+      uses: robinraju/release-downloader@v1.7
+      with:
+        latest: true
+        fileName: action-ask-bard
+        
+    - name: Execute on message
+      env:
+        SECRET: ${{ secrets.SECRET }}
+        COOKIE: ${{ secrets.COOKIE }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        REDIS_URL: ${{ secrets.REDIS_URL }}
+      run: chmod +x ./action-ask-bard && ./action-ask-bard
+
