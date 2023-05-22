@@ -3,8 +3,9 @@ use ezio::prelude::*;
 use isahc::AsyncReadResponseExt;
 use libaes::Cipher;
 use redis::AsyncCommands;
-
 use std::{env, time::Duration};
+use teloxide::types::Message;
+use teloxide::types::ParseMode::MarkdownV2;
 use teloxide::{
     payloads::SendMessage,
     types::{Update, UpdateKind},
@@ -33,6 +34,10 @@ fn escape(text: &str) -> String {
     let re = regex::Regex::new(r"\[([^]]+)\]\\\(([^)]+)\\\)");
     if let Ok(re) = re {
         result = re.replace_all(&result, "[$1]($2)").to_string();
+    }
+    let re = regex::Regex::new(r"^(\s*)\*\s");
+    if let Ok(re) = re {
+        result = re.replace_all(&result, "$1- ").to_string();
     }
     result
 }
@@ -88,8 +93,10 @@ async fn main() {
     });
 
     let response = chat_session.send_message(message.text().unwrap()).await;
-    let mut telegram_response = SendMessage::new(message.chat.id, escape(&response));
+    let escaped_message = escape(&response);
+    let mut telegram_response = SendMessage::new(message.chat.id, escaped_message.clone());
     telegram_response.reply_to_message_id = Some(message.id);
+    telegram_response.parse_mode = Some(MarkdownV2);
     let response_json = serde_json::to_string(&telegram_response).unwrap();
     let url = format!("https://api.telegram.org/bot{telegram_token}/sendMessage");
     let session_str = serde_json::to_string(&chat_session).unwrap();
@@ -104,12 +111,14 @@ async fn main() {
         .map_err(|_err| panic!("failed to send message: {response_json}"))
         .unwrap();
     stop_typing_action_tx.send(()).unwrap();
-    let send_message_response: Update = send_message_response
+    let mut send_message_response: serde_json::Value = send_message_response
         .json()
         .await
         .map_err(|_err| panic!("failed to send message: {response_json}"))
         .unwrap();
-    let UpdateKind::Message(send_message) = send_message_response.kind else { unimplemented!("") };
+    println!("{:?}\n{}", send_message_response, escaped_message);
+    let send_message: Message =
+        serde_json::from_value(send_message_response["result"].take()).unwrap();
     let key = format!("{}-{}", send_message.chat.id, send_message.id);
     let _: () = redis_connection
         .set_ex(key, session_str, 60 * 60)
