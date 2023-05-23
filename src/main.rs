@@ -31,13 +31,15 @@ fn escape(text: &str) -> String {
         .replace('-', "\\-")
         .replace('.', "\\.")
         .replace('!', "\\!");
+    let re = regex::RegexBuilder::new(r"^(\s*)\*\s")
+        .multi_line(true)
+        .build();
+    if let Ok(re) = re {
+        result = re.replace_all(&result, "$1\\• ").to_string();
+    }
     let re = regex::Regex::new(r"\[([^]]+)\]\\\(([^)]+)\\\)");
     if let Ok(re) = re {
         result = re.replace_all(&result, "[$1]($2)").to_string();
-    }
-    let re = regex::Regex::new(r"^(\s*)\*\s");
-    if let Ok(re) = re {
-        result = re.replace_all(&result, "$1- ").to_string();
     }
     result
 }
